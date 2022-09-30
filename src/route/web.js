@@ -11,6 +11,10 @@ let initWebRoutes = (app) => {
         return res.send('Hello world with Phi Ho');
     });
 
+    router.post('/post-crud', homeController.postCRUD);
+
+    router.get('/crud', homeController.getCRUD);
+
     return app.use("/", router)
 }
 
