@@ -24,7 +24,7 @@ let handleUserLogin = (email, password) => {
                 // user already exists
                 // compare password
                 let user = await db.User.findOne({
-                    attributes: ['email', 'roleId', 'password'],
+                    attributes: ['email', 'roleId', 'password', 'firstName', 'lastName'],
                     where: { email: email },
                     raw: true
                 })
@@ -119,10 +119,10 @@ let createNewUser = (data) => {
                     lastName: data.lastName,
                     address: data.address,
                     phonenumber: data.phonenumber,
-                    gender: data.gender === '1' ? true : false,
+                    gender: data.gender,
                     image: data.image,
                     roleId: data.roleId,
-                    positionId: data.positionid,
+                    positionId: data.positionId,
                 })
                 resolve({
                     errCode: 0,
@@ -138,7 +138,7 @@ let createNewUser = (data) => {
 let updateUserData = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
-            if(!data.id){
+            if (!data.id) {
                 resolve({
                     errCode: 2,
                     errMessage: 'Missing required parameters'
@@ -148,11 +148,10 @@ let updateUserData = (data) => {
                 where: { id: data.id },
                 raw: false
             })
-            if(user)
-            {
+            if (user) {
                 user.firstName = data.firstName,
-                user.lastName =  data.lastName,
-                user.address = data.address
+                    user.lastName = data.lastName,
+                    user.address = data.address
 
                 await user.save();
 
@@ -166,7 +165,7 @@ let updateUserData = (data) => {
                     errMessage: `User's not found!`
                 });
             }
-        } catch(e) {
+        } catch (e) {
             console.log(e);
         }
     })
@@ -177,7 +176,7 @@ let deleteUser = (userId) => {
         let user = await db.User.findOne({
             where: { id: userId }
         })
-        if(!user){
+        if (!user) {
             resolve({
                 errCode: 2,
                 errMessage: `The user ${userId} does not exist`
@@ -195,10 +194,34 @@ let deleteUser = (userId) => {
     })
 }
 
+let getAllCodeService = (typeInput) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!typeInput) {
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing parameter ',
+                })
+            } else {
+                let res = {};
+                let allCode = await db.Allcode.findAll({
+                    where: { type: typeInput },
+                });
+                res.errCode = 0;
+                res.data = allCode;
+                resolve(res);
+            }
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
+
 module.exports = {
     handleUserLogin: handleUserLogin,
     getAllUsers: getAllUsers,
     createNewUser: createNewUser,
     updateUserData: updateUserData,
     deleteUser: deleteUser,
+    getAllCodeService: getAllCodeService,
 }
