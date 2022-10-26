@@ -32,7 +32,7 @@ let getAllDoctors = () => {
     return new Promise(async (resolve, reject) => {
         try {
             let doctors = await db.User.findAll({
-                where: {roleId: 'R2'},
+                where: { roleId: 'R2' },
                 attributes: {
                     exclude: ['password', 'image']
                 }
@@ -48,9 +48,9 @@ let getAllDoctors = () => {
 }
 
 let saveDetailInforDoctor = (inputData) => {
-    return new Promise(async(resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
-            if(!inputData.doctorId || !inputData.contentHTML || !inputData.contentMarkdown){
+            if (!inputData.doctorId || !inputData.contentHTML || !inputData.contentMarkdown) {
                 resolve({
                     errCode: 1,
                     errMessage: 'Missing parameter '
@@ -77,7 +77,7 @@ let saveDetailInforDoctor = (inputData) => {
 let getDetailDoctorById = (inputId) => {
     return new Promise(async (resolve, reject) => {
         try {
-            if(!inputId) {
+            if (!inputId) {
                 resolve({
                     errCode: 1,
                     errMessage: 'Missing required parameter!'
@@ -88,17 +88,24 @@ let getDetailDoctorById = (inputId) => {
                         id: inputId
                     },
                     attributes: {
-                        exclude: ['password', 'image']
+                        exclude: ['password']
                     },
                     include: [
-                        { model: db.Markdown, 
+                        {
+                            model: db.Markdown,
                             attributes: ['description', 'contentHTML', 'contentMarkdown']
                         },
                         { model: db.Allcode, as: 'positionData', attributes: ['valueEn', 'valueVi'] }
                     ],
-                    raw: true,
+                    raw: false,
                     nest: true
                 })
+
+                if (data && data.image) {
+                    data.image = new Buffer(data.image, 'base64').toString('binary');
+                }
+
+                if(!data) data = {};
 
                 resolve({
                     errCode: 0,
