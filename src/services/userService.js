@@ -158,7 +158,7 @@ let updateUserData = (data) => {
                 user.phonenumber = data.phonenumber;
                 user.gender = data.gender;
                 user.image = data.avatar;
-                
+
                 await user.save();
 
                 resolve({
