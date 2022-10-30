@@ -16,14 +16,16 @@ module.exports = (sequelize, DataTypes) => {
     Doctor_Infor.init({
         doctorId: DataTypes.INTEGER,
         priceId: DataTypes.STRING,
-        proviceId: DataTypes.STRING,
+        provinceId: DataTypes.STRING,
         paymentId: DataTypes.STRING,
+        nameClinic: DataTypes.STRING,
         addressClinic: DataTypes.STRING,
         note: DataTypes.STRING,
         count: DataTypes.INTEGER,
     }, {
         sequelize,
         modelName: 'Doctor_Infor',
+        freezeTableName: true,
     });
     return Doctor_Infor;
 };
