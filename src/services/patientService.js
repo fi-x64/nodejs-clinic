@@ -13,32 +13,32 @@ let postBookAppointment = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
             if (!data.email || !data.doctorId || !data.timeType ||
-                !data.date || !data.fullName) {
+                !data.date || !data.fullName || !data.selectedGender || !data.address) {
                 resolve({
                     errCode: 1,
                     errMessage: "Missing parameter"
                 })
             } else {
                 let token = uuidv4();
-                await emailService.sendSimpleEmail({
-                    receiverEmail: data.email,
-                    patientName: data.fullName,
-                    time: data.timeString,
-                    doctorName: data.doctorName,
-                    language: data.language,
-                    redirectLink: buildUrlEmail(data.doctorId, token),
-                });
 
                 let user = await db.User.findOrCreate({
                     where: { email: data.email },
                     defaults: {
                         email: data.email,
-                        roleId: 'R3'
+                        roleId: 'R3',
+                        gender: data.selectedGender,
+                        address: data.address,
+                        firstName: data.fullName,
                     }
                 });
                 if (user && user[0]) {
-                    await db.Booking.findOrCreate({
-                        where: { patientId: user[0].id },
+                    let booking = await db.Booking.findOrCreate({
+                        where: {
+                            patientId: user[0].id,
+                            timeType: data.timeType,
+                            doctorId: data.doctorId,
+                            date: data.date
+                        },
                         defaults: {
                             statusId: 'S1',
                             doctorId: data.doctorId,
@@ -48,6 +48,22 @@ let postBookAppointment = (data) => {
                             token: token,
                         }
                     });
+                    if (booking && booking[1]) {
+                        await emailService.sendSimpleEmail({
+                            receiverEmail: data.email,
+                            patientName: data.fullName,
+                            time: data.timeString,
+                            doctorName: data.doctorName,
+                            language: data.language,
+                            redirectLink: buildUrlEmail(data.doctorId, token),
+                        });
+                    } else {
+                        resolve({
+                            data: user,
+                            errCode: 1,
+                            errMessage: 'Create new user failed'
+                        })
+                    }
                 }
 
                 resolve({
@@ -79,7 +95,6 @@ let postVerifyBookAppointment = (data) => {
                     },
                     raw: false
                 })
-
                 if (appointment) {
                     appointment.statusId = 'S2';
                     await appointment.save();

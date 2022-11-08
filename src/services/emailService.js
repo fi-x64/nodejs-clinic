@@ -55,6 +55,56 @@ let getBodyHTMLEmail = (dataSend) => {
     return result;
 }
 
+let sendAttachment = async (dataSend) => {
+    // create reusable transporter object using the default SMTP transport
+    let transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false, // true for 465, false for other ports
+        auth: {
+            user: process.env.EMAIL_APP, // generated ethereal user
+            pass: process.env.EMAIL_APP_PASSWORD, // generated ethereal password
+        },
+    });
+
+    // send mail with defined transport object
+    let info = await transporter.sendMail({
+        from: 'Test Send Email" <yummyrestaurantmail@gmail.com>', // sender address
+        to: dataSend.email, // list of receivers
+        subject: "Thông tin đặt lịch khám bệnh", // Subject line
+        html: getBodyHTMLEmailRemedy(dataSend), // html body
+        attachments: [
+            {
+                filename: `remedy-${dataSend.patientId}-${new Date().getTime()}.png`,
+                content: dataSend.imageBase64.split("base64,")[1],
+                encoding: 'base64'
+            }
+        ],
+    });
+}
+
+let getBodyHTMLEmailRemedy = (dataSend) => {
+    let result = '';
+    if (dataSend.language === 'vi') {
+        result = `<h3>Xin chào ${dataSend.patientName}!</h3>
+        <p>Đây là hoán đơn của bạn đã hoàn thành quá trình khám bệnh khi đặt lịch online trên website BookingCare</p>
+        <p>Thông tin đơn thuốc/hoá đơn được gửi trong file đính kèm:</p>
+        
+        <div>Xin chân thành cảm ơn!</div>
+        `
+    }
+    if (dataSend.language === 'en') {
+        result = `<h3>Hello ${dataSend.patientName}!</h3>
+        <p>This is your invoice after completing the medical examination process when booking an online appointment on the BookingCare website</p>
+        <p>Prescription/invoice information is sent in the attached file:</p>
+        
+        <div>Sincerely thank!</div>
+        `
+    }
+    return result;
+}
+
 module.exports = {
-    sendSimpleEmail: sendSimpleEmail
+    sendSimpleEmail: sendSimpleEmail,
+    sendAttachment: sendAttachment
 }
