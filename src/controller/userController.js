@@ -7,11 +7,39 @@ let handleLogin = async (req, res) => {
     if (!email || !password) {
         return res.status(500).json({
             errCode: 1,
+            accessToken: null,
             message: 'Missing input parameters',
         })
     }
 
     let userData = await userService.handleUserLogin(email, password);
+    // check email exists
+    //compare password
+    return res.status(200).json({
+        errCode: userData.errCode,
+        message: userData.errMessage,
+        accessToken: userData.accessToken,
+        user: userData.user ? userData.user : {}
+    });
+}
+
+let handleRegister = async (req, res) => {
+    let email = req.body.email;
+    let password = req.body.password;
+    let confirmPassword = req.body.confirmPassword;
+    let address = req.body.address;
+    let firstName = req.body.firstName;
+    let lastName = req.body.lastName;
+
+    if (!email || !password || !confirmPassword || !firstName || !lastName || !address) {
+        return res.status(500).json({
+            errCode: 1,
+            accessToken: null,
+            message: 'Missing input parameters',
+        })
+    }
+
+    let userData = await userService.handleUserRegister({ email, password, confirmPassword, email, address, firstName, lastName });
     // check email exists
     //compare password
     return res.status(200).json({
@@ -42,7 +70,6 @@ let handleGetAllUsers = async (req, res) => {
 
 let handleCreateNewUser = async (req, res) => {
     let message = await userService.createNewUser(req.body);
-    console.log(message);
     return res.status(200).json(message);
 }
 
@@ -69,7 +96,6 @@ let getAllCode = async (req, res) => {
         return res.status(200).json(data);
 
     } catch (e) {
-        console.log('Get all code error: ', e);
         return res.status(200).json({
             errCode: -1,
             errMessage: 'Error from server'
@@ -84,4 +110,5 @@ module.exports = {
     handleEditUser: handleEditUser,
     handleDeleteUser: handleDeleteUser,
     getAllCode: getAllCode,
+    handleRegister: handleRegister,
 }

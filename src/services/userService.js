@@ -1,5 +1,7 @@
 import db from "../models/index";
+const config = require("../config/auth.config");
 import bcrypt from "bcrypt";
+var jwt = require("jsonwebtoken");
 
 const salt = bcrypt.genSaltSync(10);
 
@@ -34,9 +36,13 @@ let handleUserLogin = (email, password) => {
                     if (check) {
                         userData.errCode = 0;
                         userData.errMessage = 'Ok';
+                        var token = jwt.sign({ id: user.id }, config.secret, {
+                            expiresIn: 86400 // 24 hours
+                        });
 
                         delete user.password;
                         userData.user = user;
+                        userData.accessToken = token;
                     } else {
                         userData.errCode = 3;
                         userData.errMessage = 'Wrong password';
@@ -56,6 +62,45 @@ let handleUserLogin = (email, password) => {
             reject(e);
         }
     })
+}
+
+let handleUserRegister = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let check = await checkUserEmail(data.email);
+            if (check) {
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Your email is already in use. Please try another email!'
+                })
+            } else {
+                if (data.password === data.confirmPassword) {
+                    let hashPasswordFromBcrypt = await hashUserPassword(data.password);
+                    var token = jwt.sign({ id: data.id }, config.secret);
+                    await db.User.create({
+                        email: data.email,
+                        password: hashPasswordFromBcrypt,
+                        firstName: data.firstName,
+                        lastName: data.lastName,
+                        address: data.address,
+                        roleId: 'R3',
+                        token: token,
+                    })
+                    resolve({
+                        errCode: 0,
+                        errMessage: 'OK'
+                    })
+                } else {
+                    resolve({
+                        errCode: 1,
+                        errMessage: 'Password does not match!'
+                    })
+                }
+            }
+        } catch (e) {
+            reject(e);
+        }
+    });
 }
 
 let checkUserEmail = (userEmail) => {
@@ -230,4 +275,5 @@ module.exports = {
     updateUserData: updateUserData,
     deleteUser: deleteUser,
     getAllCodeService: getAllCodeService,
+    handleUserRegister
 }

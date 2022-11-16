@@ -1,4 +1,5 @@
 import express from "express";
+const { authJwt } = require("../middleware");
 import homeController from "../controller/homeController";
 import userController from "../controller/userController";
 import doctorController from "../controller/doctorController";
@@ -9,6 +10,14 @@ import clinicController from "../controller/clinicController";
 let router = express.Router();
 
 let initWebRoutes = (app) => {
+    app.use(function (req, res, next) {
+        res.header(
+            "Access-Control-Allow-Headers",
+            "x-access-token, Origin, Content-Type, Accept"
+        );
+        next();
+    });
+
     router.get('/', homeController.getHomePage);
     router.get('/about', homeController.getAboutPage);
 
@@ -24,6 +33,7 @@ let initWebRoutes = (app) => {
     router.get('/crud', homeController.getCRUD);
 
     router.post('/api/login', userController.handleLogin);
+    router.post('/api/register', userController.handleRegister);
     router.get('/api/get-all-users', userController.handleGetAllUsers);
     router.post('/api/create-new-user', userController.handleCreateNewUser);
     router.put('/api/edit-user', userController.handleEditUser);
