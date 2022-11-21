@@ -1,5 +1,6 @@
 import db from '../models/index';
 import CRUDService from '../services/CRUDService'
+import homeService from '../services/homeService'
 
 let getHomePage = async (req, res) => {
     try {
@@ -68,6 +69,18 @@ let deleteCRUD = async (req, res) => {
     }
 }
 
+let handleSearch = async (req, res) => {
+    try {
+        let infor = await homeService.handleSearchService(req.query.search_query);
+        return res.status(200).json(infor);
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from the server'
+        })
+    }
+}
+
 module.exports = {
     getHomePage: getHomePage,
     getAboutPage: getAboutPage,
@@ -77,4 +90,5 @@ module.exports = {
     getEditCRUD: getEditCRUD,
     putCRUD: putCRUD,
     deleteCRUD: deleteCRUD,
+    handleSearch: handleSearch
 }

@@ -23,6 +23,26 @@ let handleLogin = async (req, res) => {
     });
 }
 
+let handleGoogleLogin = async (req, res) => {
+    if (!req.body.googleResponse) {
+        return res.status(500).json({
+            errCode: 1,
+            accessToken: null,
+            message: 'Missing input parameters',
+        })
+    }
+
+    let userData = await userService.handleGoogleLogin(req.body.googleResponse);
+    return res.status(200).json({
+        errCode: userData.errCode,
+        message: userData.errMessage,
+        accessToken: userData.accessToken,
+        googleId: req.body.googleResponse.googleId,
+        imgGoogle: req.body.googleResponse.profileObj.imgUrl,
+        user: userData.user ? userData.user : {}
+    });
+}
+
 let handleRegister = async (req, res) => {
     let email = req.body.email;
     let password = req.body.password;
@@ -79,6 +99,12 @@ let handleEditUser = async (req, res) => {
     return res.status(200).json(message);
 }
 
+let updateUserInfo = async (req, res) => {
+    let data = req.body;
+    let message = await userService.updateUserInfo(data);
+    return res.status(200).json(message);
+}
+
 let handleDeleteUser = async (req, res) => {
     if (!req.body.id) {
         return res.status(200).json({
@@ -111,4 +137,6 @@ module.exports = {
     handleDeleteUser: handleDeleteUser,
     getAllCode: getAllCode,
     handleRegister: handleRegister,
+    handleGoogleLogin: handleGoogleLogin,
+    updateUserInfo: updateUserInfo,
 }

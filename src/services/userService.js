@@ -64,6 +64,52 @@ let handleUserLogin = (email, password) => {
     })
 }
 
+let handleGoogleLogin = (googleResponse) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let userData = {};
+
+            let user = await db.User.findOne({
+                where: { email: googleResponse.profileObj.email }
+            });
+
+            if (user) {
+                userData.errCode = 0;
+                userData.errMessage = 'Ok';
+                let accessToken = jwt.sign({ id: user.id }, config.secret, {
+                    expiresIn: 86400 // 24 hours
+                });
+
+                userData.user = user;
+                userData.accessToken = accessToken;
+                resolve(userData);
+
+            } else {
+                let token = jwt.sign({ id: googleResponse.profileObj.googleId }, config.secret);
+                let result = await db.User.create({
+                    email: googleResponse.profileObj.email,
+                    firstName: googleResponse.profileObj.givenName,
+                    lastName: googleResponse.profileObj.familyName,
+                    roleId: 'R3',
+                    token: token,
+                })
+                let accessToken = jwt.sign({ id: user.id }, config.secret, {
+                    expiresIn: 86400 // 24 hours
+                });
+                if (result) {
+                    userData.errCode = 0;
+                    userData.errMessage = 'Ok';
+                    userData.user = result;
+                    userData.accessToken = accessToken;
+                }
+                resolve(userData);
+            }
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
+
 let handleUserRegister = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -208,7 +254,48 @@ let updateUserData = (data) => {
 
                 resolve({
                     errCode: 0,
-                    message: 'Update the user succeeds!'
+                    message: 'Update user succeeds!'
+                });
+            } else {
+                resolve({
+                    errCode: 1,
+                    errMessage: `User's not found!`
+                });
+            }
+        } catch (e) {
+            console.log(e);
+        }
+    })
+}
+
+let updateUserInfo = (data) => {
+    console.log('Check data: ', data);
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data.id || !data.firstName || !data.phonenumber || !data.lastName || !data.address || !data.gender) {
+                resolve({
+                    errCode: 2,
+                    errMessage: 'Missing required parameters'
+                })
+            }
+            let user = await db.User.findOne({
+                where: { id: data.id },
+                raw: false
+            })
+            if (user) {
+                user.firstName = data.firstName;
+                user.lastName = data.lastName;
+                user.address = data.address;
+                user.phonenumber = data.phonenumber;
+                user.gender = data.gender;
+                if (user.image) {
+                    user.image = data.avatar;
+                }
+                await user.save();
+
+                resolve({
+                    errCode: 0,
+                    message: 'Update user succeeds!'
                 });
             } else {
                 resolve({
@@ -275,5 +362,7 @@ module.exports = {
     updateUserData: updateUserData,
     deleteUser: deleteUser,
     getAllCodeService: getAllCodeService,
-    handleUserRegister
+    handleUserRegister: handleUserRegister,
+    handleGoogleLogin: handleGoogleLogin,
+    updateUserInfo: updateUserInfo,
 }

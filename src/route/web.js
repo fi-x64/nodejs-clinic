@@ -33,6 +33,7 @@ let initWebRoutes = (app) => {
     router.get('/crud', homeController.getCRUD);
 
     router.post('/api/login', userController.handleLogin);
+    router.post('/api/google-login', userController.handleGoogleLogin);
     router.post('/api/register', userController.handleRegister);
     router.get('/api/get-all-users', userController.handleGetAllUsers);
     router.post('/api/create-new-user', userController.handleCreateNewUser);
@@ -62,6 +63,10 @@ let initWebRoutes = (app) => {
     router.post('/api/create-new-clinic', clinicController.createClinic);
     router.get('/api/get-all-clinic', clinicController.getAllClinic);
     router.get('/api/get-detail-clinic-by-id', clinicController.getDetailClinicById);
+
+    router.get('/api/search', homeController.handleSearch);
+
+    router.post('/api/update-user-info', userController.updateUserInfo);
 
     return app.use("/", router)
 }
