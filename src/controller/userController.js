@@ -129,6 +129,43 @@ let getAllCode = async (req, res) => {
     }
 }
 
+let checkEmail = async (req, res) => {
+    try {
+        let data = await userService.checkEmail(req.body);
+        return res.status(200).json(data);
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from server'
+        });
+    }
+}
+
+let verifyPasswordRecover = async (req, res) => {
+    try {
+        console.log('Check req: ', req.body);
+        let data = await userService.verifyPasswordRecover(req.body);
+        return res.status(200).json(data);
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from server'
+        });
+    }
+}
+
+let handleChangePassword = async (req, res) => {
+    try {
+        let data = await userService.handleChangePassword(req.body);
+        return res.status(200).json(data);
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from server'
+        });
+    }
+}
+
 module.exports = {
     handleLogin: handleLogin,
     handleGetAllUsers: handleGetAllUsers,
@@ -139,4 +176,7 @@ module.exports = {
     handleRegister: handleRegister,
     handleGoogleLogin: handleGoogleLogin,
     updateUserInfo: updateUserInfo,
+    checkEmail: checkEmail,
+    verifyPasswordRecover: verifyPasswordRecover,
+    handleChangePassword: handleChangePassword
 }

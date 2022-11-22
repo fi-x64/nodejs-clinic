@@ -2,8 +2,16 @@ import db from "../models/index";
 const config = require("../config/auth.config");
 import bcrypt from "bcrypt";
 var jwt = require("jsonwebtoken");
+import emailService from "./emailService";
+require('dotenv').config();
 
 const salt = bcrypt.genSaltSync(10);
+
+let buildUrlEmail = (userId, token) => {
+    let result = `${process.env.URL_REACT}/verify-password-recover?token=${token}&userId=${userId}`
+
+    return result;
+}
 
 let hashUserPassword = (password) => {
     return new Promise(async (resolve, reject) => {
@@ -269,7 +277,6 @@ let updateUserData = (data) => {
 }
 
 let updateUserInfo = (data) => {
-    console.log('Check data: ', data);
     return new Promise(async (resolve, reject) => {
         try {
             if (!data.id || !data.firstName || !data.phonenumber || !data.lastName || !data.address || !data.gender) {
@@ -355,6 +362,102 @@ let getAllCodeService = (typeInput) => {
     })
 }
 
+let checkEmail = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data) {
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing parameter ',
+                })
+            } else {
+                let res = {};
+                let user = await db.User.findOne({
+                    where: { email: data.email },
+                    attributes: {
+                        exclude: ['password']
+                    }
+                });
+
+                if (user) {
+                    let dataEmail = user;
+                    dataEmail.language = data.language;
+                    dataEmail.redirectLink = buildUrlEmail(user.id, user.token);
+                    await emailService.sendRecoverPasswordEmail(dataEmail);
+                }
+                res.errCode = 0;
+                res.user = user;
+                resolve(res);
+            }
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
+
+let verifyPasswordRecover = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data) {
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing parameter ',
+                })
+            } else {
+                let res = await db.User.findOne({
+                    where: {
+                        id: data.userId,
+                        token: data.token
+                    },
+                    attributes: {
+                        exclude: ['password']
+                    }
+                });
+
+                res.errCode = 0;
+                resolve(res);
+            }
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
+
+let handleChangePassword = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data) {
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing parameter ',
+                })
+            } else {
+                let res = await db.User.findOne({
+                    where: {
+                        id: data.userId,
+                    },
+                    raw: false
+                });
+                console.log("Check res: ", res);
+                if (res) {
+                    let hashPasswordFromBcrypt = await hashUserPassword(data.password);
+                    var token = jwt.sign({ id: data.userId }, config.secret);
+                    res.password = hashPasswordFromBcrypt;
+                    res.token = token;
+                    await res.save();
+
+                    resolve({
+                        errCode: 0,
+                        message: 'Update user succeeds!'
+                    });
+                }
+            }
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
+
 module.exports = {
     handleUserLogin: handleUserLogin,
     getAllUsers: getAllUsers,
@@ -365,4 +468,7 @@ module.exports = {
     handleUserRegister: handleUserRegister,
     handleGoogleLogin: handleGoogleLogin,
     updateUserInfo: updateUserInfo,
+    checkEmail: checkEmail,
+    verifyPasswordRecover: verifyPasswordRecover,
+    handleChangePassword: handleChangePassword,
 }

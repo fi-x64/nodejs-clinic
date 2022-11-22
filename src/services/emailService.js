@@ -83,6 +83,48 @@ let sendAttachment = async (dataSend) => {
     });
 }
 
+let sendRecoverPasswordEmail = async (dataSend) => {
+    // create reusable transporter object using the default SMTP transport
+    let transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false, // true for 465, false for other ports
+        auth: {
+            user: process.env.EMAIL_APP, // generated ethereal user
+            pass: process.env.EMAIL_APP_PASSWORD, // generated ethereal password
+        },
+    });
+
+    // send mail with defined transport object
+    let info = await transporter.sendMail({
+        from: 'Password Recover email" <yummyrestaurantmail@gmail.com>', // sender address
+        to: dataSend.email, // list of receivers
+        subject: "Thông tin đổi mật khẩu cho tài khoản", // Subject line
+        html: getBodyHTMLEmailRecoverPassword(dataSend), // html body
+    });
+}
+
+let getBodyHTMLEmailRecoverPassword = (dataSend) => {
+    let result = '';
+    if (dataSend.language === 'vi') {
+        result = `<h3>Xin chào ${dataSend.firstName + " " + dataSend.lastName}!</h3>
+        <p>Đây là email để xác nhận đổi mật khẩu cho tài khoản của bạn trên website BookingCare</p>
+        <p>Vui lòng click vào đường <a href=${dataSend.redirectLink} target="_blank" style={color:"blue"}>link</a> này để tiến hành đổi mật khẩu</p>
+        
+        <div>Xin chân thành cảm ơn!</div>
+        `
+    }
+    if (dataSend.language === 'en') {
+        result = `<h3>Hello ${dataSend.lastName + " " + dataSend.firstName}!</h3>
+        <p>This is the email to confirm the password change for your account on the BookingCare website</p>
+        <p>Please click on this <a href=${dataSend.redirectLink} target="_blank" style={color:"blue"}>here</a> to change your password</p>
+        
+        <div>Sincerely thank!</div>
+        `
+    }
+    return result;
+}
+
 let getBodyHTMLEmailRemedy = (dataSend) => {
     let result = '';
     if (dataSend.language === 'vi') {
@@ -106,5 +148,6 @@ let getBodyHTMLEmailRemedy = (dataSend) => {
 
 module.exports = {
     sendSimpleEmail: sendSimpleEmail,
-    sendAttachment: sendAttachment
+    sendAttachment: sendAttachment,
+    sendRecoverPasswordEmail: sendRecoverPasswordEmail,
 }

@@ -68,6 +68,10 @@ let initWebRoutes = (app) => {
 
     router.post('/api/update-user-info', userController.updateUserInfo);
 
+    router.post('/api/check-email', userController.checkEmail);
+    router.post('/verify-password-recover', userController.verifyPasswordRecover);
+    router.post('/api/change-password-recover', userController.handleChangePassword);
+
     return app.use("/", router)
 }
 
