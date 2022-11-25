@@ -166,6 +166,55 @@ let handleChangePassword = async (req, res) => {
     }
 }
 
+let getDoctorComment = async (req, res) => {
+    try {
+        let infor = await userService.getDoctorComment(req.query);
+        return res.status(200).json(infor)
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from the server'
+        })
+    }
+}
+
+let checkUserComment = async (req, res) => {
+    try {
+        let infor = await userService.checkUserComment(req.query);
+        return res.status(200).json(infor)
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from the server'
+        })
+    }
+}
+
+let handleComment = async (req, res) => {
+    try {
+        let infor = await userService.handleComment(req.body);
+        return res.status(200).json(infor)
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from the server'
+        })
+    }
+}
+
+let handleDeleteComment = async (req, res) => {
+    try {
+        let infor = await userService.handleDeleteComment(req.query.commentId);
+        return res.status(200).json(infor)
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from the server'
+        })
+    }
+}
+
+
 module.exports = {
     handleLogin: handleLogin,
     handleGetAllUsers: handleGetAllUsers,
@@ -178,5 +227,9 @@ module.exports = {
     updateUserInfo: updateUserInfo,
     checkEmail: checkEmail,
     verifyPasswordRecover: verifyPasswordRecover,
-    handleChangePassword: handleChangePassword
+    handleChangePassword: handleChangePassword,
+    getDoctorComment: getDoctorComment,
+    checkUserComment: checkUserComment,
+    handleComment: handleComment,
+    handleDeleteComment: handleDeleteComment,
 }

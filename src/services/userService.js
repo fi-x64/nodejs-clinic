@@ -458,6 +458,153 @@ let handleChangePassword = (data) => {
     })
 }
 
+let getDoctorComment = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data) {
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing parameter ',
+                })
+            } else {
+                let res = await db.Comment.findAll({
+                    where: {
+                        doctorId: data.doctorId,
+                    },
+                    include: [
+                        {
+                            model: db.User, as: 'patientDataComment',
+                            attributes: ['id', 'firstName', 'lastName'],
+                        },
+                    ],
+                    order: [
+                        ['id', 'DESC'],
+                    ],
+                    raw: true,
+                    nest: true,
+                });
+                if (res) {
+                    resolve({
+                        errCode: 0,
+                        data: res,
+                        message: 'Get comment succeeded!'
+                    });
+                }
+            }
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
+
+let checkUserComment = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data) {
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing parameter ',
+                })
+            } else {
+                let res = await db.Booking.findOne({
+                    where: {
+                        doctorId: data.doctorId,
+                        patientId: data.patientId,
+                        statusId: 'S3',
+                    },
+                    order: [
+                        ['date', 'DESC'],
+                    ],
+                    raw: true
+                });
+
+                if (res.id) {
+                    resolve({
+                        errCode: 0,
+                        data: res,
+                        message: 'Check success!'
+                    });
+                } else {
+                    resolve({
+                        errCode: 1,
+                        message: 'Check success user has not book yet!'
+                    })
+                }
+            }
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
+
+let handleComment = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data) {
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing parameter ',
+                })
+            } else {
+                var res = await db.Comment.create({
+                    doctorId: data.doctorId,
+                    patientId: data.patientId,
+                    content: data.content,
+                })
+
+                if (res) {
+                    resolve({
+                        errCode: 0,
+                        data: {
+                            id: res.id,
+                            content: res.content,
+                            doctorId: res.doctorId,
+                            patientId: res.patientId,
+                        },
+                        message: 'Create comment success!'
+                    });
+                }
+
+            }
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
+
+let handleDeleteComment = (commentId) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!commentId) {
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing parameter ',
+                })
+            } else {
+                if (!commentId) {
+                    resolve({
+                        errCode: 2,
+                        errMessage: `The ${commentId} does not exist`
+                    });
+                }
+
+                let res = await db.Comment.destroy({
+                    where: { id: commentId },
+                });
+
+                if (res) {
+                    resolve({
+                        errCode: 0,
+                        message: 'The comment is now deleted successfully',
+                    });
+                }
+            }
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
+
 module.exports = {
     handleUserLogin: handleUserLogin,
     getAllUsers: getAllUsers,
@@ -471,4 +618,8 @@ module.exports = {
     checkEmail: checkEmail,
     verifyPasswordRecover: verifyPasswordRecover,
     handleChangePassword: handleChangePassword,
+    getDoctorComment: getDoctorComment,
+    checkUserComment: checkUserComment,
+    handleComment: handleComment,
+    handleDeleteComment: handleDeleteComment,
 }

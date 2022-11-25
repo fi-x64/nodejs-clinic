@@ -72,6 +72,11 @@ let initWebRoutes = (app) => {
     router.post('/verify-password-recover', userController.verifyPasswordRecover);
     router.post('/api/change-password-recover', userController.handleChangePassword);
 
+    router.get('/api/get-comment-doctor', userController.getDoctorComment);
+    router.get('/api/check-user-comment', userController.checkUserComment);
+    router.post('/api/handle-comment', userController.handleComment);
+    router.get('/api/delete-comment', userController.handleDeleteComment);
+
     return app.use("/", router)
 }
 
