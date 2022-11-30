@@ -1,8 +1,11 @@
 import db from "../models/index";
 const config = require("../config/auth.config");
+// import dateFormatfrom "dateformat";
+import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-var jwt = require("jsonwebtoken");
 import emailService from "./emailService";
+import sequelize, { Op } from "sequelize";
+
 require('dotenv').config();
 
 const salt = bcrypt.genSaltSync(10);
@@ -605,6 +608,83 @@ let handleDeleteComment = (commentId) => {
     })
 }
 
+let getDoctorPayment = (doctorId) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!doctorId) {
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing parameter ',
+                })
+            } else {
+                let res = await db.Doctor_Infor.findOne({
+                    where: { doctorId: doctorId },
+                    attributes: ['paymentId'],
+                });
+
+                if (res) {
+                    resolve({
+                        errCode: 0,
+                        data: res,
+                        message: 'The payment is now loaded successfully',
+                    });
+                }
+            }
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
+
+let handleStatisticBookingWeek = () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let res = await db.Booking.findAll({
+                group: ["date"],
+                attributes: ['date', [sequelize.fn('COUNT', 'date'), 'dateCount']],
+            })
+
+            if (res) {
+                resolve({
+                    errCode: 0,
+                    data: res,
+                    message: 'Statistic is now loaded successfully',
+                });
+            }
+
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
+
+let handleStatisticPatientAddress = () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let res = await db.User.findAll({
+                where: {
+                    roleId: 'R3', address: {
+                        [Op.ne]: null
+                    }
+                },
+                group: ["address"],
+                attributes: ['address', [sequelize.fn('COUNT', 'address'), 'addressCount']],
+            })
+
+            if (res) {
+                resolve({
+                    errCode: 0,
+                    data: res,
+                    message: 'Statistic is now loaded successfully',
+                });
+            }
+
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
+
 module.exports = {
     handleUserLogin: handleUserLogin,
     getAllUsers: getAllUsers,
@@ -622,4 +702,7 @@ module.exports = {
     checkUserComment: checkUserComment,
     handleComment: handleComment,
     handleDeleteComment: handleDeleteComment,
+    getDoctorPayment: getDoctorPayment,
+    handleStatisticBookingWeek: handleStatisticBookingWeek,
+    handleStatisticPatientAddress: handleStatisticPatientAddress,
 }

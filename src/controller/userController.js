@@ -214,6 +214,41 @@ let handleDeleteComment = async (req, res) => {
     }
 }
 
+let getDoctorPayment = async (req, res) => {
+    try {
+        let infor = await userService.getDoctorPayment(req.query.doctorId);
+        return res.status(200).json(infor)
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from the server'
+        })
+    }
+}
+
+let handleStatisticBookingWeek = async (req, res) => {
+    try {
+        let infor = await userService.handleStatisticBookingWeek();
+        return res.status(200).json(infor)
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from the server'
+        })
+    }
+}
+
+let handleStatisticPatientAddress = async (req, res) => {
+    try {
+        let infor = await userService.handleStatisticPatientAddress();
+        return res.status(200).json(infor)
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from the server'
+        })
+    }
+}
 
 module.exports = {
     handleLogin: handleLogin,
@@ -232,4 +267,7 @@ module.exports = {
     checkUserComment: checkUserComment,
     handleComment: handleComment,
     handleDeleteComment: handleDeleteComment,
+    getDoctorPayment: getDoctorPayment,
+    handleStatisticBookingWeek: handleStatisticBookingWeek,
+    handleStatisticPatientAddress: handleStatisticPatientAddress,
 }

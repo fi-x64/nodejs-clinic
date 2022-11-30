@@ -77,6 +77,14 @@ let initWebRoutes = (app) => {
     router.post('/api/handle-comment', userController.handleComment);
     router.get('/api/delete-comment', userController.handleDeleteComment);
 
+    router.get('/api/get-doctor-payment', userController.getDoctorPayment);
+
+    router.get('/api/payment_return', patientController.paymentReturn);
+
+    //Statistic
+    router.get('/api/statistic-booking-week', userController.handleStatisticBookingWeek);
+    router.get('/api/statistic-patient-address', userController.handleStatisticPatientAddress);
+
     return app.use("/", router)
 }
 
