@@ -685,6 +685,114 @@ let handleStatisticPatientAddress = () => {
     })
 }
 
+let handleStatisticCheckoutSuccess = () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let res = await db.Checkout.findAll({
+                where: {
+                    paymentStatus: 'success',
+                },
+                group: ["paymentDate"],
+                attributes: ['paymentDate', [sequelize.fn('COUNT', 'paymentDate'), 'paymentCount']],
+            })
+            if (res) {
+                resolve({
+                    errCode: 0,
+                    data: res,
+                    message: 'Statistic is now loaded successfully',
+                });
+            }
+
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
+
+let getAllBookingUser = (userId) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!userId) {
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing parameter ',
+                })
+            } else {
+                let res = await db.Booking.findAll({
+                    where: {
+                        patientId: userId
+                    },
+                    attributes: ['timeType', 'statusId', 'doctorId', 'date'],
+                    include: [
+                        {
+                            model: db.User,
+                            as: 'doctorBookingData',
+                            where: {
+                                id: { [Op.col]: 'Booking.doctorId' }
+                            },
+                            attributes: ['firstName', 'lastName'],
+                        },
+                        {
+                            model: db.User,
+                            as: 'patientData',
+                            where: {
+                                id: { [Op.col]: 'Booking.patientId' }
+                            },
+                            attributes: ['firstName', 'lastName', 'gender', 'address'],
+                        },
+                        {
+                            model: db.Checkout,
+                            attributes: ['paymentMethod', 'paymentStatus', 'paymentDate'],
+                        },
+                        {
+                            model: db.Allcode, as: 'timeTypeDataPatient', attributes: ['valueEn', 'valueVi'],
+                        }
+                    ],
+                    raw: false,
+                    nest: true
+                })
+
+                if (res) {
+                    resolve({
+                        errCode: 0,
+                        data: res,
+                        message: 'Statistic is now loaded successfully',
+                    });
+                }
+            }
+        } catch (e) {
+            console.log(e);
+            reject(e);
+        }
+    })
+}
+
+let handleCheckOldPassword = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let res = await db.User.findOne({
+                where: {
+                    id: data.userId,
+                },
+            });
+
+            let check = await bcrypt.compareSync(data.oldPassword, res.password);
+
+            if (check) {
+                resolve({
+                    errCode: 0,
+                    check: check,
+                    message: 'Password match',
+                });
+            }
+
+        } catch (e) {
+            console.log(e);
+            reject(e);
+        }
+    })
+}
+
 module.exports = {
     handleUserLogin: handleUserLogin,
     getAllUsers: getAllUsers,
@@ -705,4 +813,7 @@ module.exports = {
     getDoctorPayment: getDoctorPayment,
     handleStatisticBookingWeek: handleStatisticBookingWeek,
     handleStatisticPatientAddress: handleStatisticPatientAddress,
+    getAllBookingUser: getAllBookingUser,
+    handleCheckOldPassword: handleCheckOldPassword,
+    handleStatisticCheckoutSuccess: handleStatisticCheckoutSuccess
 }

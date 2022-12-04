@@ -40,6 +40,7 @@ let initWebRoutes = (app) => {
     router.put('/api/edit-user', userController.handleEditUser);
     router.delete('/api/delete-user', userController.handleDeleteUser);
     router.get('/api/allcode', userController.getAllCode);
+    router.post('/api/check-old-password', userController.handleCheckOldPassword);
 
     router.get('/api/top-doctor-home', doctorController.getTopDoctorHome);
     router.get('/api/get-all-doctors', doctorController.getAllDoctors);
@@ -51,6 +52,7 @@ let initWebRoutes = (app) => {
     router.get('/api/get-profile-doctor-by-id', doctorController.getProfileDoctorById);
 
     router.get('/api/get-list-patient-for-doctor', doctorController.getListPatientForDoctor);
+    router.get('/api/get-all-booking-user', userController.getAllBookingUser);
     router.post('/api/send-remedy', doctorController.sendRemedy);
 
     router.post('/api/patient-book-appointment', patientController.postBookAppointment);
@@ -79,11 +81,12 @@ let initWebRoutes = (app) => {
 
     router.get('/api/get-doctor-payment', userController.getDoctorPayment);
 
-    router.get('/api/payment_return', patientController.paymentReturn);
+    router.post('/api/payment-return', patientController.paymentReturn);
 
     //Statistic
     router.get('/api/statistic-booking-week', userController.handleStatisticBookingWeek);
     router.get('/api/statistic-patient-address', userController.handleStatisticPatientAddress);
+    router.get('/api/statistic-checkout-success', userController.handleStatisticCheckoutSuccess);
 
     return app.use("/", router)
 }

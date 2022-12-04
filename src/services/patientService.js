@@ -4,11 +4,12 @@ require('dotenv').config();
 import emailService from "./emailService"
 import { v4 as uuidv4 } from 'uuid';
 import vnPayParams from "../utils/paymentParams";
-import querystring from "qs";
 import * as crypto from "crypto";
 import sequelize, { Op } from "sequelize";
 import moment from "moment";
+import querystring from "qs";
 import sortObject from "../utils/sortObject";
+import { reject } from "lodash";
 var jwt = require("jsonwebtoken");
 
 let buildUrlEmail = (doctorId, token) => {
@@ -21,7 +22,7 @@ let postBookAppointment = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
             if (!data.email || !data.doctorId || !data.timeType ||
-                !data.date || !data.fullName || !data.selectedGender || !data.address) {
+                !data.date || !data.firstName || !data.lastName || !data.selectedGender || !data.address) {
                 resolve({
                     errCode: 1,
                     errMessage: "Missing parameter"
@@ -36,7 +37,8 @@ let postBookAppointment = (data) => {
                         roleId: 'R3',
                         gender: data.selectedGender,
                         address: data.address,
-                        firstName: data.fullName,
+                        firstName: data.firstName,
+                        lastName: data.lastName,
                         token: token
                     }
                 });
@@ -57,22 +59,29 @@ let postBookAppointment = (data) => {
                             token: token,
                         }
                     });
-                    console.log("Check booking: ", booking);
                     if (data.paymentMethod === "cash") {
                         if (booking && booking[1]) {
-                            await emailService.sendSimpleEmail({
-                                receiverEmail: data.email,
-                                patientName: data.fullName,
-                                time: data.timeString,
-                                doctorName: data.doctorName,
-                                language: data.language,
-                                redirectLink: buildUrlEmail(data.doctorId, token),
+                            const newCheckout = await db.Checkout.create({
+                                total: data.amount,
+                                bookingId: booking[0].id,
+                                paymentMethod: "cash",
+                                paymentDate: moment().format('YYYYMMDDHHmmss'),
                             })
+                            if (newCheckout) {
+                                await emailService.sendSimpleEmail({
+                                    receiverEmail: data.email,
+                                    patientName: data.lastName + " " + data.firstName,
+                                    time: data.timeString,
+                                    doctorName: data.doctorName,
+                                    language: data.language,
+                                    redirectLink: buildUrlEmail(data.doctorId, token),
+                                })
+                            }
                         } else {
                             resolve({
                                 data: user,
                                 errCode: 1,
-                                errMessage: 'Create new user failed'
+                                errMessage: 'Create new booking failed'
                             })
                         }
                     } else if (data.paymentMethod === 'vnpay') {
@@ -85,7 +94,7 @@ let postBookAppointment = (data) => {
                     data: user,
                     dataPayment: dataPayment,
                     errCode: 0,
-                    errMessage: 'Create new user succeeded'
+                    errMessage: 'Create new booking succeeded'
                 })
             }
         } catch (e) {
@@ -150,7 +159,7 @@ let processPayment = (data) => {
 
                 var createDate = moment().format('YYYYMMDDHHmmss')
                 var orderId = moment().format('HHmmss')
-                let amount = data.amount;
+                let amount = data.amount * 100;
                 var bankCode = data.bankCode;
 
                 var orderInfo = "Online payment";
@@ -185,7 +194,6 @@ let processPayment = (data) => {
                 var hmac = crypto.createHmac("sha512", secretKey);
                 var signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
                 vnp_Params["vnp_SecureHash"] = signed;
-                vnpUrl += "?" + querystring.stringify(vnp_Params, { encode: false });
 
                 const newCheckout = await db.Checkout.create({
                     total: amount,
@@ -193,14 +201,21 @@ let processPayment = (data) => {
                     paymentMethod: "vnpay",
                     transactionId: orderId,
                 })
-                console.log("Check data: ", data);
+                vnpUrl += "?" + querystring.stringify(vnp_Params, { encode: false });
 
-                console.log(vnpUrl)
-                resolve({
-                    errCode: 0,
-                    url: vnpUrl,
-                    errMessage: "Update the appointment succeeded!"
-                })
+                if (newCheckout) {
+                    resolve({
+                        errCode: 0,
+                        checkoutId: newCheckout.id,
+                        url: vnpUrl,
+                        errMessage: "Update the appointment succeeded!"
+                    })
+                } else {
+                    resolve({
+                        errCode: 1,
+                        errMessage: "Cann't create new checkout!"
+                    })
+                }
             }
         } catch (e) {
             reject(e);
@@ -208,54 +223,33 @@ let processPayment = (data) => {
     })
 }
 
-let paymentReturn = async (req, res, next) => {
-    var vnp_Params = req.query;
+let paymentReturn = async (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            var vnp_Params = data;
+            var orderId = vnp_Params.vnp_TxnRef;
 
-    var secureHash = vnp_Params["vnp_SecureHash"];
+            let checkout = await db.Checkout.findOne({ where: { transactionId: orderId }, raw: false });
+            if (checkout) {
+                checkout.paymentStatus = "success";
+                checkout.paymentDate = vnp_Params.vnp_PayDate;
 
-    delete vnp_Params["vnp_SecureHash"];
-    delete vnp_Params["vnp_SecureHashType"];
+                await checkout.save();
 
-    vnp_Params = sortObject(vnp_Params);
+                let booking = await db.Booking.findOne({ where: { id: checkout.bookingId }, raw: false });
+                booking.statusId = "S2";
 
-    // var config = require('config');
-    // var tmnCode = config.get('vnp_TmnCode');
-    var secretKey = vnPayParams.vnp_HashSecret;
+                await booking.save();
 
-    var signData = querystring.stringify(vnp_Params, { encode: false });
-    var hmac = crypto.createHmac("sha512", secretKey);
-    var signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
-
-    if (secureHash === signed) {
-        var orderId = vnp_Params["vnp_TxnRef"];
-        var rspCode = vnp_Params["vnp_ResponseCode"];
-        //Kiem tra du lieu co hop le khong, cap nhat trang thai don hang va gui ket qua cho VNPAY theo dinh dang duoi
-        const checkout = await db.Checkout.findOne({ where: { transactionId: orderId } });
-        if (!order) return res.json({ success: false, message: "Order not exist" });
-        if (rspCode !== "00")
-            // return res.json({ success: false, message: 'Transaction failed' })
-            return res.redirect("/payment/failed");
-        order.transactionId = req.query.vnp_TransactionNo;
-        order.paymentStatus = "paid";
-        order.paymentDate = req.query.vnp_PayDate;
-        await order.save();
-        // let resData = await Order.create({
-        //     total: vnp_Params.vnp_Amount,
-        //     paymentStatus: vnp_Params.vnp_TransactionStatus,
-        //     transactionId: vnp_Params.vnp_TransactionNo,
-        //     paymentMethod: vnp_Params.vnp_CardType,
-        //     transdate: vnp_Params.vnp_PayDate,
-
-        // });
-
-        // if (resData) {
-        // }
-
-
-        res.redirect("http://localhost:3000/payment-infor", { errCode: 0, data: vnp_Params, payDate: order.updatedAt });
-    } else {
-        res.render("guest/cart/payment_infor", { errCode: -1 });
-    }
+                resolve({
+                    errCode: 0,
+                    errMessage: "Update the checkout succeeded!"
+                })
+            }
+        } catch (e) {
+            reject(e);
+        }
+    })
 }
 
 module.exports = {

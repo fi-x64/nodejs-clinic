@@ -20,6 +20,9 @@ module.exports = {
             paymentDate: {
                 type: Sequelize.STRING
             },
+            transactionId: {
+                type: Sequelize.STRING
+            },
             createdAt: {
                 allowNull: false,
                 type: Sequelize.DATE

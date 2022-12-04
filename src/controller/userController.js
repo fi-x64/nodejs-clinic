@@ -250,6 +250,43 @@ let handleStatisticPatientAddress = async (req, res) => {
     }
 }
 
+let handleStatisticCheckoutSuccess = async (req, res) => {
+    try {
+        let infor = await userService.handleStatisticCheckoutSuccess();
+        return res.status(200).json(infor)
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from the server'
+        })
+    }
+}
+
+let getAllBookingUser = async (req, res) => {
+    try {
+        let infor = await userService.getAllBookingUser(req.query.userId);
+        return res.status(200).json(infor)
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from the server'
+        })
+    }
+}
+
+let handleCheckOldPassword = async (req, res) => {
+    console.log("Check req.body: ", req.body);
+    try {
+        let infor = await userService.handleCheckOldPassword(req.body);
+        return res.status(200).json(infor)
+    } catch (e) {
+        return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from the server'
+        })
+    }
+}
+
 module.exports = {
     handleLogin: handleLogin,
     handleGetAllUsers: handleGetAllUsers,
@@ -270,4 +307,7 @@ module.exports = {
     getDoctorPayment: getDoctorPayment,
     handleStatisticBookingWeek: handleStatisticBookingWeek,
     handleStatisticPatientAddress: handleStatisticPatientAddress,
+    getAllBookingUser: getAllBookingUser,
+    handleCheckOldPassword: handleCheckOldPassword,
+    handleStatisticCheckoutSuccess: handleStatisticCheckoutSuccess,
 }

@@ -1,4 +1,6 @@
 import patientService from '../services/patientService'
+import db from "../models/index";
+import vnPayParams from "../utils/paymentParams";
 
 let postBookAppointment = async (req, res) => {
     var ipAddr = req.headers["x-forwarded-for"] || req.connection.remoteAddress ||
@@ -7,7 +9,9 @@ let postBookAppointment = async (req, res) => {
     req.body.ipAddr = ipAddr;
     try {
         let infor = await patientService.postBookAppointment(req.body);
-        return res.status(200).json(infor)
+        if (infor && infor.url) {
+            res.redirect(infor.url);
+        } else return res.status(200).json(infor)
     } catch (e) {
         return res.status(200).json({
             errCode: -1,

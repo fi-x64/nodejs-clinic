@@ -19,6 +19,7 @@ module.exports = (sequelize, DataTypes) => {
         paymentMethod: DataTypes.STRING,
         paymentStatus: DataTypes.STRING,
         paymentDate: DataTypes.STRING,
+        transactionId: DataTypes.STRING,
     }, {
         sequelize,
         modelName: 'Checkout',

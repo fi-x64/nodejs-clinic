@@ -452,13 +452,22 @@ let sendRemedy = (data) => {
                 if (appointment) {
                     appointment.statusId = 'S3';
                     await appointment.save();
+                    let checkout = await db.Checkout.findOne({
+                        where: { bookingId: appointment.id },
+                        raw: false,
+                    })
+                    if (checkout) {
+                        checkout.paymentStatus = "success";
+                        await checkout.save();
+                    }
+                    await emailService.sendAttachment(data);
+                    resolve({
+                        errCode: 0,
+                        errMessage: 'Send succeeded'
+                    })
                 }
-                await emailService.sendAttachment(data);
                 //send email remedy
-                resolve({
-                    errCode: 0,
-                    errMessage: 'Send succeeded'
-                })
+
             }
         } catch (e) {
             reject(e);
