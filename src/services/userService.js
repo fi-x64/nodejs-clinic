@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import emailService from "./emailService";
 import sequelize, { Op } from "sequelize";
+import moment from "moment";
 
 require('dotenv').config();
 
@@ -553,6 +554,7 @@ let handleComment = (data) => {
                     doctorId: data.doctorId,
                     patientId: data.patientId,
                     content: data.content,
+                    date: moment().format('YYYYMMDDHHmmss').toString(),
                 })
 
                 if (res) {

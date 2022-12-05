@@ -71,6 +71,7 @@ let handleRegister = async (req, res) => {
 
 let handleGetAllUsers = async (req, res) => {
     let id = req.query.id; //ALL, id
+    console.log("Check req: ", req.headers);
 
     if (!id) {
         return res.status(200).json({
