@@ -70,8 +70,7 @@ let handleRegister = async (req, res) => {
 }
 
 let handleGetAllUsers = async (req, res) => {
-    let id = req.query.id; //ALL, id
-    console.log("Check req: ", req.headers);
+    let id = req.query.id;
 
     if (!id) {
         return res.status(200).json({
@@ -82,6 +81,7 @@ let handleGetAllUsers = async (req, res) => {
     }
 
     let users = await userService.getAllUsers(id);
+
     return res.status(200).json({
         errCode: 0,
         errMessage: 'OK',

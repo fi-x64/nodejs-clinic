@@ -4,7 +4,7 @@ import db from "../models/index";
 
 let verifyToken = (req, res, next) => {
   let token = req.headers["x-access-token"];
-  console.log('Check token:', token);
+
   if (!token) {
     return res.status(403).send({
       message: "No token provided!"
@@ -26,7 +26,6 @@ let isAdmin = async (req, res, next) => {
   let user = await db.User.findOne({
     where: { id: req.userId }
   })
-  console.log('Check user:', user);
 
   if (user.roleId === "R1") {
     next();
