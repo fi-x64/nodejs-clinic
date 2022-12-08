@@ -227,7 +227,7 @@ let bulkCreateSchedule = (data) => {
                 let schedule = data.arrSchedule;
                 if (schedule && schedule.length > 0) {
                     schedule = schedule.map(item => {
-                        item.maxNumber = MAX_NUMBER_SCHEDULE;
+                        item.maxNumber = data.maxNumber;
                         return item;
                     })
                 }
