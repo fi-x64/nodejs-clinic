@@ -12,8 +12,8 @@ import sortObject from "../utils/sortObject";
 import { reject } from "lodash";
 var jwt = require("jsonwebtoken");
 
-let buildUrlEmail = (doctorId, token) => {
-    let result = `${process.env.URL_REACT}/verify-booking?token=${token}&doctorId=${doctorId}`
+let buildUrlEmail = (doctorId, token, scheduleId) => {
+    let result = `${process.env.URL_REACT}/verify-booking?token=${token}&doctorId=${doctorId}&scheduleId=${scheduleId}`;
 
     return result;
 }
@@ -28,66 +28,98 @@ let postBookAppointment = (data) => {
                     errMessage: "Missing parameter"
                 })
             } else {
-                let token = uuidv4();
-
-                let user = await db.User.findOrCreate({
-                    where: { email: data.email },
-                    defaults: {
-                        email: data.email,
-                        roleId: 'R3',
-                        gender: data.selectedGender,
-                        address: data.address,
-                        firstName: data.firstName,
-                        lastName: data.lastName,
-                        token: token
-                    }
-                });
-                if (user && user[0]) {
-                    var booking = await db.Booking.findOrCreate({
-                        where: {
-                            patientId: user[0].id,
-                            timeType: data.timeType,
-                            doctorId: data.doctorId,
-                            date: data.date,
-                        },
+                var doctorSchedule = await db.Schedule.findOne({
+                    where: {
+                        id: data.scheduleId,
+                    },
+                    raw: false
+                })
+                if (doctorSchedule && doctorSchedule.currentNumber < doctorSchedule.maxNumber) {
+                    let token = uuidv4();
+                    let user = await db.User.findOrCreate({
+                        where: { email: data.email },
                         defaults: {
-                            statusId: 'S1',
-                            doctorId: data.doctorId,
-                            patientId: user[0].id,
-                            date: data.date,
-                            timeType: data.timeType,
-                            token: token,
+                            email: data.email,
+                            roleId: 'R3',
+                            gender: data.selectedGender,
+                            address: data.address,
+                            firstName: data.firstName,
+                            lastName: data.lastName,
+                            token: token
                         }
                     });
-                    if (data.paymentMethod === "cash") {
-                        if (booking && booking[1]) {
-                            const newCheckout = await db.Checkout.create({
-                                total: data.amount,
-                                bookingId: booking[0].id,
-                                paymentMethod: "cash",
-                                paymentDate: moment().format('YYYYMMDDHHmmss'),
-                            })
-                            if (newCheckout) {
-                                await emailService.sendSimpleEmail({
-                                    receiverEmail: data.email,
-                                    patientName: data.lastName + " " + data.firstName,
-                                    time: data.timeString,
-                                    doctorName: data.doctorName,
-                                    language: data.language,
-                                    redirectLink: buildUrlEmail(data.doctorId, token),
+                    if (user && user[0]) {
+                        var booking = await db.Booking.findOrCreate({
+                            where: {
+                                patientId: user[0].id,
+                                timeType: data.timeType,
+                                doctorId: data.doctorId,
+                                date: data.date,
+                            },
+                            defaults: {
+                                statusId: 'S1',
+                                doctorId: data.doctorId,
+                                patientId: user[0].id,
+                                date: data.date,
+                                timeType: data.timeType,
+                                token: token,
+                            }
+                        });
+
+
+
+                        if (data.paymentMethod === "cash") {
+
+                            if (booking && booking[1]) {
+                                const newCheckout = await db.Checkout.create({
+                                    total: data.amount,
+                                    bookingId: booking[0].id,
+                                    paymentMethod: "cash",
+                                    paymentDate: moment().format('YYYYMMDDHHmmss'),
+                                })
+                                if (newCheckout) {
+                                    await emailService.sendSimpleEmail({
+                                        receiverEmail: data.email,
+                                        patientName: data.lastName + " " + data.firstName,
+                                        time: data.timeString,
+                                        doctorName: data.doctorName,
+                                        language: data.language,
+                                        redirectLink: buildUrlEmail(data.doctorId, token, data.scheduleId),
+                                    })
+                                }
+                            } else {
+                                resolve({
+                                    data: user,
+                                    errCode: 1,
+                                    errMessage: 'Create new booking failed'
                                 })
                             }
-                        } else {
-                            resolve({
-                                data: user,
-                                errCode: 1,
-                                errMessage: 'Create new booking failed'
-                            })
                         }
                     } else if (data.paymentMethod === 'vnpay') {
-                        data.bookingId = booking[0].id;
-                        var dataPayment = await processPayment(data);
+                        if (doctorSchedule && doctorSchedule.currentNumber < doctorSchedule.maxNumber) {
+                            data.bookingId = booking[0].id;
+                            var dataPayment = await processPayment(data);
+
+                            if (dataPayment) {
+                                if (doctorSchedule.currentNumber) {
+                                    doctorSchedule.currentNumber = doctorSchedule.currentNumber + 1;
+                                } else doctorSchedule.currentNumber = 1;
+                                await doctorSchedule.save();
+                            }
+                        }
+                        else {
+                            resolve({
+                                errCode: 2,
+                                errMessage: "Out of slot",
+                            })
+                        }
                     }
+                }
+                else {
+                    resolve({
+                        errCode: 2,
+                        errMessage: "Out of slot",
+                    })
                 }
 
                 resolve({
@@ -104,6 +136,7 @@ let postBookAppointment = (data) => {
 }
 
 let postVerifyBookAppointment = (data) => {
+    console.log("Check data: ", data);
     return new Promise(async (resolve, reject) => {
         try {
             if (!data.token || !data.doctorId) {
@@ -123,6 +156,27 @@ let postVerifyBookAppointment = (data) => {
                 if (appointment) {
                     appointment.statusId = 'S2';
                     await appointment.save();
+
+                    var doctorSchedule = await db.Schedule.findOne({
+                        where: {
+                            id: data.scheduleId,
+                        },
+                        raw: false
+                    })
+
+                    if (doctorSchedule) {
+                        if (doctorSchedule.currentNumber)
+                            if (doctorSchedule.currentNumber < doctorSchedule.maxNumber)
+                                doctorSchedule.currentNumber = doctorSchedule.currentNumber + 1;
+                            else {
+                                resolve({
+                                    errCode: 2,
+                                    errMessage: "Out of slot",
+                                })
+                            }
+                        else doctorSchedule.currentNumber = 1;
+                        await doctorSchedule.save();
+                    }
 
                     resolve({
                         errCode: 0,
