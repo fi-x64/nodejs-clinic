@@ -9,6 +9,7 @@ let postBookAppointment = async (req, res) => {
     req.body.ipAddr = ipAddr;
     try {
         let infor = await patientService.postBookAppointment(req.body);
+        console.log("Check infor: ", infor);
         if (infor && infor.url) {
             res.redirect(infor.url);
         } else return res.status(200).json(infor)

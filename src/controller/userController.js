@@ -38,7 +38,6 @@ let handleGoogleLogin = async (req, res) => {
         message: userData.errMessage,
         accessToken: userData.accessToken,
         googleId: req.body.googleResponse.googleId,
-        imgGoogle: req.body.googleResponse.profileObj.imgUrl,
         user: userData.user ? userData.user : {}
     });
 }

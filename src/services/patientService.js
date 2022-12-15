@@ -36,7 +36,7 @@ let postBookAppointment = (data) => {
                 })
                 if (doctorSchedule && doctorSchedule.currentNumber < doctorSchedule.maxNumber) {
                     let token = uuidv4();
-                    let user = await db.User.findOrCreate({
+                    var user = await db.User.findOrCreate({
                         where: { email: data.email },
                         defaults: {
                             email: data.email,
@@ -67,7 +67,6 @@ let postBookAppointment = (data) => {
                         });
 
 
-
                         if (data.paymentMethod === "cash") {
 
                             if (booking && booking[1]) {
@@ -94,24 +93,24 @@ let postBookAppointment = (data) => {
                                     errMessage: 'Create new booking failed'
                                 })
                             }
-                        }
-                    } else if (data.paymentMethod === 'vnpay') {
-                        if (doctorSchedule && doctorSchedule.currentNumber < doctorSchedule.maxNumber) {
-                            data.bookingId = booking[0].id;
-                            var dataPayment = await processPayment(data);
+                        } else if (data.paymentMethod === 'vnpay') {
+                            if (doctorSchedule) {
+                                data.bookingId = booking[0].id;
+                                var dataPayment = await processPayment(data);
 
-                            if (dataPayment) {
-                                if (doctorSchedule.currentNumber) {
-                                    doctorSchedule.currentNumber = doctorSchedule.currentNumber + 1;
-                                } else doctorSchedule.currentNumber = 1;
-                                await doctorSchedule.save();
+                                if (dataPayment) {
+                                    if (doctorSchedule.currentNumber) {
+                                        doctorSchedule.currentNumber = doctorSchedule.currentNumber + 1;
+                                    } else doctorSchedule.currentNumber = 1;
+                                    await doctorSchedule.save();
+                                }
                             }
-                        }
-                        else {
-                            resolve({
-                                errCode: 2,
-                                errMessage: "Out of slot",
-                            })
+                            else {
+                                resolve({
+                                    errCode: 2,
+                                    errMessage: "Out of slot",
+                                })
+                            }
                         }
                     }
                 }

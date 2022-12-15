@@ -134,7 +134,7 @@ let handleUserRegister = (data) => {
             } else {
                 if (data.password === data.confirmPassword) {
                     let hashPasswordFromBcrypt = await hashUserPassword(data.password);
-                    var token = jwt.sign({ id: data.id }, config.secret);
+                    var token = jwt.sign(config.secret);
                     await db.User.create({
                         email: data.email,
                         password: hashPasswordFromBcrypt,
@@ -215,6 +215,7 @@ let createNewUser = (data) => {
                 })
             } else {
                 let hashPasswordFromBcrypt = await hashUserPassword(data.password);
+                var token = jwt.sign({ id: data.id }, config.secret);
                 await db.User.create({
                     email: data.email,
                     password: hashPasswordFromBcrypt,
@@ -227,6 +228,7 @@ let createNewUser = (data) => {
                     roleId: data.roleId,
                     positionId: data.positionId,
                     image: data.avatar,
+                    token: token,
                 })
                 resolve({
                     errCode: 0,
